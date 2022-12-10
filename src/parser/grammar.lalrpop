@@ -1,0 +1,64 @@
+use crate::lexer::*;
+use crate::executor::ast::*;
+grammar(input: &str);
+
+pub SourceUnit:SourceUnit = {
+    SourceUnitPart+ => SourceUnit(<>)
+};
+
+SourceUnitPart:SourceUnitPart = {
+    Statement => SourceUnitPart::Statement(<>),
+};
+
+Statement:Statement = {
+    Declaration <id:Expression> ";"  => Statement::Declaration(id),
+    <l:Expression> "=" <r:Expression> ";"  => Statement::Assignment(l,r),
+    Write <e:Expression> ";"  => Statement::Write(e),
+}; 
+
+Expression:Expression= {
+    ArithExpression
+}
+ArithExpression: Expression = {
+    <l:ArithExpression>  "+"  <r:Factor> => Expression::Add(Box::new(l),Box::new(r)),
+    <l:ArithExpression>  "-"  <r:Factor> => Expression::Subtract(Box::new(l),Box::new(r)),
+    Factor,
+};
+
+Factor: Expression= {
+    <l:Factor>  "*"  <r:Term> => Expression::Multiply(Box::new(l),Box::new(r)),
+    <l:Factor>  "/"  <r:Term> => Expression::Divide(Box::new(l),Box::new(r)),
+    <l:Factor>  "%"  <r:Term> => Expression::Modulo(Box::new(l),Box::new(r)),
+    Term,
+};
+
+Term: Expression= {
+    <v:Integer>  => Expression::Integer(v),
+    <id:Identifier>  => Expression::Symbol(id),
+    <string:StringLiteral>  => Expression::StringLiteral(string),
+    <d:InputNumber>  => Expression::InputNumber,
+    <d:InputString>  => Expression::InputString,
+    "(" <e:Expression> ")" => e
+};
+
+
+extern {
+    enum TokenType {
+        Identifier => TokenType::Symbol(usize),
+        ";" => TokenType::SemiColon,
+        Declaration => TokenType::Declaration,
+        "=" => TokenType::Assignment,
+        Integer => TokenType::Integer(i64),
+        StringLiteral => TokenType::Literal(usize),
+        "+" => TokenType::Plus,
+        "-" => TokenType::Minus,
+        "*" => TokenType::Product,
+        "/" => TokenType::Divide,
+        "(" => TokenType::OpenParantheses,
+        ")" => TokenType::CloseParantheses,
+        Write => TokenType::Write,
+        "%" => TokenType::Modulo,
+        InputNumber => TokenType::InputNumber,
+        InputString => TokenType::InputString,
+    }
+}
